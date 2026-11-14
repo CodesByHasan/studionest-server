@@ -4,7 +4,11 @@ import 'dotenv/config'
 import cors from 'cors';
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
+
+if (!process.env.MONGODB_URI) {
+  throw new Error("MONGODB_URI is missing from .env");
+}
 
 app.use(cors());
 app.use(express.json());
