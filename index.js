@@ -13,38 +13,57 @@ if (!process.env.MONGODB_URI) {
 app.use(cors());
 app.use(express.json());
 
+// MongoDB connection
 const client = new MongoClient(process.env.MONGODB_URI);
 
-export async function connectToMongoDB() {
-  try {
-    await client.connect();
-    console.log("You successfully connected to MongoDB!");
-    return client;
-  } catch (err) {
-    console.dir(err);
-  }
+let db;
+let studioCollection;
+let bookingCollection;
+
+async function connectToMongoDB() {
+  await client.connect();
+  console.log("Successfully connected to MongoDB!");
+
+  db = client.db("studionest");
+  studioCollection = db.collection("studios");
+  bookingCollection = db.collection("bookings");
+
+  // Useful indexes
+  await studioCollection.createIndex({ createdAt: -1 });
+  await studioCollection.createIndex({ hostId: 1 });
+  await bookingCollection.createIndex({ studioId: 1, status: 1 });
+  await bookingCollection.createIndex({ userId: 1 });
+
+  return client;
 }
 
-const mongoClient = await connectToMongoDB().catch(console.error);
-const db = mongoClient.db('studionest');
-const studiosCollection = db.collection('studios');
-
-app.post ('/add-studio', async (req, res) => {
-    const data = req.body;
-    const result = await studiosCollection.insertOne(data);
-  console.log('data', data);
-    // res.json({ message: "studio added successfully" });
-    console.log('result', result);
+// Temporary route (replaced in a later commit)
+app.post("/add-studio", async (req, res) => {
+  try {
+    const result = await studioCollection.insertOne(req.body);
     res.send(result);
-    // res.send({ message: "studio added successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to add studio." });
+  }
 });
-
-// http://localhost:8000/add-studio
 
 app.get("/", (req, res) => {
   res.send("msg: server is running fine!");
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Start server after MongoDB connects
+async function startServer() {
+  try {
+    await connectToMongoDB();
+
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
