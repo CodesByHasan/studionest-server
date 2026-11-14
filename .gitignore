@@ -1,13 +1,7 @@
-# Dependencies
 node_modules/
-
-# Environment variables
 .env
 .env.*
-
-# Logs
+.vercel/
 *.log
 npm-debug.log*
-
-# OS files
 .DS_Store
